@@ -320,6 +320,9 @@ def generate_network(similarity_matrix, idlist, full_name_list, weight_list, thr
 
 @app.route('/_query')
 def query():
+    print('Receive _query')
+    print(datetime.datetime.now())
+    
     full_name = request.args.get('repo', 0, type=str)
     repo_info = get_repo_info(full_name)
     readme = get_readme(full_name)
@@ -366,6 +369,9 @@ def query():
     network_json = generate_network(similarity_matrix, idlist, full_name_list, weight_list, thres=thres_link)
     network_json['focus_id'] = repo_info['id']
 
+    print('Return _query')
+    print(datetime.datetime.now())
+    
     return flask.json.dumps(network_json)
 
 
@@ -420,18 +426,6 @@ def repo_info():
             'id': repo_id, 'readme': markdown.markdown(readme[:readme_len])}
 
     return flask.json.dumps(data)
-
-
-@app.route("/db_json")
-def cities_json():
-    with db:
-        cur = db.cursor()
-        cur.execute("SELECT Name, CountryCode, Population FROM city ORDER BY Population DESC;")
-        query_results = cur.fetchall()
-    cities = []
-    for result in query_results:
-        cities.append(dict(name=result[0], country=result[1], population=result[2]))
-    return jsonify(dict(cities=cities))
 
 
 @app.route("/jquery")
