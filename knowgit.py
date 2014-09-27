@@ -107,13 +107,14 @@ def prepare_cluster(language):
     # for language, cluster_label, ind, repo_id, vec_pickled in cur_center:
         print('Load..')
         print(datetime.datetime.now())
-        cluster_matrix[i, :] = pickle.loads(str(vec_pickled))
+        tmp = pickle.loads(str(vec_pickled))
+        
+        print('Put in matrix...')
+        print(datetime.datetime.now())
+        cluster_matrix[i, :] = tmp
         center = {'ind': ind, 'id': repo_id}
         cluster_centers.append(center)
         i += 1
-
-    print('Done cluster_matrix construction')
-    print(datetime.datetime.now())
     
     return cluster_centers, cluster_matrix
 
@@ -329,51 +330,23 @@ def generate_network(similarity_matrix, idlist, full_name_list, weight_list, thr
 
 @app.route('/_query')
 def query():
-    print('Receive _query')
-    print(datetime.datetime.now())
-    
     full_name = request.args.get('repo', 0, type=str)
-
-    print('get_repo_info')
-    print(datetime.datetime.now())
-
     repo_info = get_repo_info(full_name)
-
-    print('get_readme')
-    print(datetime.datetime.now())
-
     readme = get_readme(full_name)
-
-    print('text2vector')
-    print(datetime.datetime.now())
-
     vec_readme = text2vector(readme)
     vec_description = text2vector(repo_info['description'])
     nvec = normalize_vec(vec_readme+vec_description)
     language = repo_info['language']
 
-    print('prepare_cluster')
-    print(datetime.datetime.now())
-
     cluster_centers, cluster_matrix = prepare_cluster(language)
 
-    print('Label vec')
-    print(datetime.datetime.now())
-    
     label = label_vec(nvec, cluster_matrix)
-    # print(label)
-
-    print('Load similarity matrix')
-    print(datetime.datetime.now())
 
     indlist, idlist, matrix_tmp = load_similarity_matrix(label, language)
     similarity_matrix = matrix_tmp
     full_name_list, weight_list = get_full_name_weight_list(idlist)
 
     shape = matrix_tmp.shape
-
-    print('If not clause')
-    print(datetime.datetime.now())
 
     if repo_info['id'] not in idlist:  # not exists in database
         similarity_matrix = np.zeros((shape[0]+1, shape[1]+1))
