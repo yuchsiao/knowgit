@@ -366,6 +366,9 @@ def query():
         n_fork = int(repo_info['forks_count'])
         weight_list.append(math.log10(n_star + ratio_star_fork*n_fork))
 
+    print('Start generating network')
+    print(datetime.datetime.now())
+
     network_json = generate_network(similarity_matrix, idlist, full_name_list, weight_list, thres=thres_link)
     network_json['focus_id'] = repo_info['id']
 
