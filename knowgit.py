@@ -100,18 +100,9 @@ def prepare_cluster(language):
     # cur_center.execute('SELECT * FROM center WHERE language="' + language + '";')
     i = 0
 
-    print('Construct cluster_matrix')
-    print(datetime.datetime.now())
-
     for cluster_label, ind, repo_id, vec_pickled in cur_center:
     # for language, cluster_label, ind, repo_id, vec_pickled in cur_center:
-        print('Load..')
-        print(datetime.datetime.now())
-        tmp = pickle.loads(str(vec_pickled))
-        
-        print('Put in matrix...')
-        print(datetime.datetime.now())
-        cluster_matrix[i, :] = tmp
+        cluster_matrix[i, :] = pickle.loads(str(vec_pickled))
         center = {'ind': ind, 'id': repo_id}
         cluster_centers.append(center)
         i += 1
@@ -120,7 +111,7 @@ def prepare_cluster(language):
 
 
 tag_dict, tag_list = prepare_tag()
-# cluster_centers, cluster_matrix = prepare_cluster()
+cluster_centers, cluster_matrix = prepare_cluster('tmp')
 
 
 def time_github_to_unix(timestr):
@@ -338,7 +329,7 @@ def query():
     nvec = normalize_vec(vec_readme+vec_description)
     language = repo_info['language']
 
-    cluster_centers, cluster_matrix = prepare_cluster(language)
+    # cluster_centers, cluster_matrix = prepare_cluster(language)
 
     label = label_vec(nvec, cluster_matrix)
 
