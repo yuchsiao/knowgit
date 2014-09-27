@@ -332,15 +332,23 @@ def query():
     language = repo_info['language']
     cluster_centers, cluster_matrix = prepare_cluster(language)
 
-
+    print('Label vec')
+    print(datetime.datetime.now())
+    
     label = label_vec(nvec, cluster_matrix)
     # print(label)
+
+    print('Load similarity matrix')
+    print(datetime.datetime.now())
 
     indlist, idlist, matrix_tmp = load_similarity_matrix(label, language)
     similarity_matrix = matrix_tmp
     full_name_list, weight_list = get_full_name_weight_list(idlist)
 
     shape = matrix_tmp.shape
+
+    print('If not clause')
+    print(datetime.datetime.now())
 
     if repo_info['id'] not in idlist:  # not exists in database
         similarity_matrix = np.zeros((shape[0]+1, shape[1]+1))
@@ -366,7 +374,7 @@ def query():
         n_fork = int(repo_info['forks_count'])
         weight_list.append(math.log10(n_star + ratio_star_fork*n_fork))
 
-    print('Start generating network')
+    print('Generate network')
     print(datetime.datetime.now())
 
     network_json = generate_network(similarity_matrix, idlist, full_name_list, weight_list, thres=thres_link)
