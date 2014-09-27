@@ -324,12 +324,28 @@ def query():
     print(datetime.datetime.now())
     
     full_name = request.args.get('repo', 0, type=str)
+
+    print('get_repo_info')
+    print(datetime.datetime.now())
+
     repo_info = get_repo_info(full_name)
+
+    print('get_readme')
+    print(datetime.datetime.now())
+
     readme = get_readme(full_name)
+
+    print('text2vector')
+    print(datetime.datetime.now())
+
     vec_readme = text2vector(readme)
     vec_description = text2vector(repo_info['description'])
     nvec = normalize_vec(vec_readme+vec_description)
     language = repo_info['language']
+
+    print('prepare_cluster')
+    print(datetime.datetime.now())
+
     cluster_centers, cluster_matrix = prepare_cluster(language)
 
     print('Label vec')
