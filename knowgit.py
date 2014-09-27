@@ -99,6 +99,10 @@ def prepare_cluster(language):
     cur_center.execute('SELECT * FROM center;')
     # cur_center.execute('SELECT * FROM center WHERE language="' + language + '";')
     i = 0
+
+    print('Construct cluster_matrix')
+    print(datetime.datetime.now())
+
     for cluster_label, ind, repo_id, vec_pickled in cur_center:
     # for language, cluster_label, ind, repo_id, vec_pickled in cur_center:
         cluster_matrix[i, :] = pickle.loads(str(vec_pickled))
@@ -106,6 +110,9 @@ def prepare_cluster(language):
         cluster_centers.append(center)
         i += 1
 
+    print('Done cluster_matrix construction')
+    print(datetime.datetime.now())
+    
     return cluster_centers, cluster_matrix
 
 
