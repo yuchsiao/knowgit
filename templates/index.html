@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <link rel="icon" href="../../favicon.ico">
+
+    <title>Starter Template for Bootstrap</title>
+
+
+    <!--JavaScript-->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+    <script src="../static/bootstrap-3.2.0-dist/js/bootstrap.min.js"></script>
+    <!--<script src="../static/js/sigma.min.js"></script>-->
+    <script src="../static/vis-dist/vis.min.js"></script>
+    <script src="../static/d3.min.js"></script>
+    <!--<script src="../static/jqcloud/jqcloud-1.0.4.min.js"></script>-->
+
+    <script type=text/javascript>
+      $SCRIPT_ROOT = {{ request.script_root|tojson|safe }};
+    </script>
+    <script src="../static/js/kg.js"></script>
+
+    <!-- CSS -->
+    <link href="../static/bootstrap-3.2.0-dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="../static/css/starter-template.css" rel="stylesheet">
+    <link href="../static/vis-dist/vis.min.css" rel="stylesheet">
+    <link href="../static/octicons/octicons.css" rel="stylesheet">
+    <link href="../static/jqcloud/jqcloud.css" rel="stylesheet">
+    <link href="../static/css/style.css" rel="stylesheet">
+</head>
+
+
+<body>
+
+<div class="navbar navbar-inverse navbar-fixed-top" role="navigation">
+    <div class="container">
+        <div class="navbar-header">
+            <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target=".navbar-collapse">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+            </button>
+            <a class="navbar-brand" href="#">KnowGit</a>
+        </div>
+        <div class="collapse navbar-collapse">
+            <ul class="nav navbar-nav">
+                <li class="active"><a href="#">Home</a></li>
+                <li><a href="#about">About</a></li>
+                <li><a href="#contact">Contact</a></li>
+            </ul>
+        </div><!--/.nav-collapse -->
+    </div>
+</div>
+
+<!--<br>-->
+<br>
+
+<div id="title-container">
+
+    <div id="title" class="starter-template">
+        <h1><span style="color:#1471ba">Know</span><span style="color:#c12c2c">Git</span></h1>
+        <h2><span style="color:#1471ba">Know</span>ledge <span style="color:#c12c2c">G</span>roup @ <span class="mega-octicon octicon-logo-github"></span> <span class="mega-octicon octicon-mark-github"></span> </h2>
+        <p class="lead"><span>I</span>dentify similar repos.
+            <span>F</span>ind alternative tools. <br>
+            <span>L</span>earn the big picture of state-of-the-art technologies.</p>
+    </div>
+</div><!-- /.container -->
+<span id="repo-input-knowgit"><span style="color:#1471ba">Know</span><span style="color:#c12c2c">Git</span></span>
+<div class="starter-template" id="repo-input-container">
+    <input id="repo-input" type="text" name="repo" placeholder="Enter account/repo">
+</div>
+<span id="repo-input-github">@ <span class="octicon octicon-logo-github"></span> <span class="octicon octicon-mark-github"></span></span>
+
+
+<div id="main-container">
+    <div id="network-container"></div>
+</div>
+
+</body>
+</html>
