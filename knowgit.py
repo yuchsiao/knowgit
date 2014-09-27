@@ -166,6 +166,7 @@ def clean_markdown(text):
 
     flag_skip = False
     for row in rows:
+        row = row.decode('utf-8')
         if '```' in row:
             flag_skip = not flag_skip
             continue
