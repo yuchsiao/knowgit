@@ -105,6 +105,8 @@ def prepare_cluster(language):
 
     for cluster_label, ind, repo_id, vec_pickled in cur_center:
     # for language, cluster_label, ind, repo_id, vec_pickled in cur_center:
+        print('Load..')
+        print(datetime.datetime.now())
         cluster_matrix[i, :] = pickle.loads(str(vec_pickled))
         center = {'ind': ind, 'id': repo_id}
         cluster_centers.append(center)
