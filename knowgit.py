@@ -6,7 +6,6 @@ import urllib2
 import json
 import base64
 import pymysql
-import os
 import codecs
 import csv
 import math
@@ -15,12 +14,15 @@ import time
 import markdown
 import datetime
 import calendar
+import sys
 
 from nltk.tokenize import word_tokenize
 from nltk.probability import FreqDist
 
 # Global parameters
-filename_tag = 'static/tags100m.csv'
+# filename_tag = 'static/tags100m.csv'
+# filename_tag = 'static/tags_cleaned.csv'
+filename_tag = 'static/tags_cleaned2.csv'
 filename_stopword = 'static/stopword_mysql'
 token = "token e27373ef1be7b1ca7713410f011167167f482134"
 ratio_star_fork = 10
@@ -32,11 +34,13 @@ n_tag_on_display = 5
 tag_scale = 8.0
 readme_len = 350
 # database_name = 'github_language'
-database_name = 'github_gaussian'
-# database_name = 'github_sqrtlog'
+# database_name = 'github_gaussian'
+# database_name = 'github_tag'
+# database_name = 'github_tag_not_converged'
+database_name = 'github_damping'
 mu = math.log10(2113)
 sigma = 1
-flag_normalize_tag = False
+flag_normalize_tag = True
 
 app = Flask(__name__)
 
@@ -82,36 +86,55 @@ def prepare_tag():
 
 
 def prepare_cluster(language):
-    cluster_centers = []
+    # print language
+    centers = []
 
     # load cluster centers
     cur_center = db.cursor()
     cur_center.execute('USE ' + database_name + ';')
 
     # allocate memory
-    cur_center.execute('SELECT count(*) FROM center;')
-    # cur_center.execute('SELECT count(*) FROM center WHERE language="' + language + '";')
+    # cur_center.execute('SELECT count(*) FROM center;')
+    cur_center.execute('SELECT count(*) FROM center WHERE language="' + language + '";')
     n_center = cur_center.fetchall()[0][0]
     n_tag = len(tag_list)
-    cluster_matrix = sp.sparse.lil_matrix((n_center, n_tag))
+    matrix = sp.sparse.lil_matrix((n_center, n_tag))
 
     # get center info
-    cur_center.execute('SELECT * FROM center;')
-    # cur_center.execute('SELECT * FROM center WHERE language="' + language + '";')
+    # cur_center.execute('SELECT * FROM center;')
+    cur_center.execute('SELECT * FROM center WHERE language="' + language + '";')
     i = 0
 
-    for cluster_label, ind, repo_id, vec_pickled in cur_center:
-    # for language, cluster_label, ind, repo_id, vec_pickled in cur_center:
-        cluster_matrix[i, :] = pickle.loads(str(vec_pickled))
+    # for cluster_label, ind, repo_id, vec_pickled in cur_center:
+    for language, cluster_label, ind, repo_id, vec_pickled in cur_center:
+        tmp = pickle.loads(str(vec_pickled))
+        matrix[i, :] = pickle.loads(str(vec_pickled))
         center = {'ind': ind, 'id': repo_id}
-        cluster_centers.append(center)
+        centers.append(center)
         i += 1
     
-    return cluster_centers, cluster_matrix
+    return centers, matrix
+
+
+def prepare_clusters():
+    centers = {}
+    matrices = {}
+
+    cur = db.cursor()
+    cur.execute('USE ' + database_name + ';')
+    cur.execute('select language from center group by language;')
+
+    for row, in cur:
+        language = str(row)
+        center, matrix = prepare_cluster(language)
+        centers[language] = center
+        matrices[language] = matrix
+
+    return centers, matrices
 
 
 tag_dict, tag_list = prepare_tag()
-cluster_centers, cluster_matrix = prepare_cluster('tmp')
+cluster_centers, cluster_matrices = prepare_clusters()
 
 
 def time_github_to_unix(timestr):
@@ -240,8 +263,8 @@ def label_vec(vec, cluster_matrix):
 def load_similarity_matrix(label, language):
     cur_cluster = db.cursor()
     cur_cluster.execute('USE ' + database_name + ';')
-    cur_cluster.execute('SELECT indlist, idlist, matrix FROM cluster WHERE cluster_label='+str(label) + ';')
-    # cur_cluster.execute('SELECT indlist, idlist, matrix FROM cluster WHERE cluster_label='+str(label)+' and language="' + language + '";')
+    # cur_cluster.execute('SELECT indlist, idlist, matrix FROM cluster WHERE cluster_label='+str(label) + ';')
+    cur_cluster.execute('SELECT indlist, idlist, matrix FROM cluster WHERE cluster_label='+str(label)+' and language="' + language + '";')
 
     indlist_text, idlist_text, matrix_pickled = cur_cluster.fetchall()[0]
     matrix = pickle.loads(str(matrix_pickled))
@@ -327,11 +350,12 @@ def query():
     vec_readme = text2vector(readme)
     vec_description = text2vector(repo_info['description'])
     nvec = normalize_vec(vec_readme+vec_description)
-    language = repo_info['language']
+    language = str(repo_info['language']).lower()
 
     # cluster_centers, cluster_matrix = prepare_cluster(language)
+    matrix = cluster_matrices[language]
 
-    label = label_vec(nvec, cluster_matrix)
+    label = label_vec(nvec, matrix)
 
     indlist, idlist, matrix_tmp = load_similarity_matrix(label, language)
     similarity_matrix = matrix_tmp
