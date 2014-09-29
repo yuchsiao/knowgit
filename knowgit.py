@@ -28,7 +28,9 @@ token = "token e27373ef1be7b1ca7713410f011167167f482134"
 ratio_star_fork = 10
 node_scaling = 10
 edge_scaling = 0.3
-thres_link = 0.7
+link_thres = 0.4
+link_branch = 5
+link_branch_2nd = 2
 n_edge_limit = 20
 n_tag_on_display = 5
 tag_scale = 8.0
@@ -291,60 +293,128 @@ def get_full_name_weight_list(idlist):
     return full_name_list, weight_list
 
 
-def generate_network(similarity_matrix, idlist, full_name_list, weight_list, thres=0.5):
-    n_id = len(idlist)
+def find_largest_n(similarity_matrix, ind, n):
+    tuple_list = []
+    for i in xrange(0, similarity_matrix.shape[0]):
+        if i == ind:
+            continue
+        tuple_list.append((i, similarity_matrix[ind, i]))
+    sorted_tuple_list = sorted(tuple_list, key=lambda x: x[1], reverse=True)
+    return sorted_tuple_list[:n]
+
+
+def containNode(node_list, node_id):
+    for node in node_list:
+        if node['id'] == node_id:
+            return True
+    return False
+
+
+def generate_network(repo_id, history_graph, similarity_matrix, idlist, full_name_list, weight_list,
+                     link_branch=5, link_branch_2nd=2, link_thres=0.5):
 
     nodes = []
-    for i in xrange(0, n_id):
-        nodes.append({'id': idlist[i], 'value': weight_list[i]*node_scaling,
-                      'label': full_name_list[i].split('/')[1]})  #, 'title': full_name_list[i]})
-
-    # edges = []
-    # weight_pair = []
-    # for i in range(0, n_id):
-    #     weight_pair.append((i, weight_list[i]))
-    # sorted(weight_pair, key=lambda x: x[0], reverse=True)
-
-    # print(similarity_matrix.shape)
-
-    edge_info = []
-    for i in xrange(0, n_id-1):
-        for j in xrange(i+1, n_id):
-            if similarity_matrix[i, j] >= thres:
-                edge_info.append((i, j, similarity_matrix[i, j]))
-    edge_info = sorted(edge_info, key=lambda x: x[2], reverse=True)
-
-    if len(edge_info) > n_edge_limit:
-        edge_info = edge_info[:n_edge_limit]
-
-    # count occurance
-    edge_occurance = [0]*n_id
-    for i, j, val in edge_info:
-        edge_occurance[i] += 1
-        edge_occurance[j] += 1
-
-    for (i, val) in enumerate(edge_occurance):
-        if val == 0:
-            similarity_matrix[i, i] = 0
-            max_ind = 0
-            max_val = 0
-            for j in xrange(0, n_id):
-                if max_val < similarity_matrix[i, j]:
-                    max_val = similarity_matrix[i, j]
-                    max_ind = j
-            edge_info.append((i, max_ind, max_val))
-
     edges = []
-    for item in edge_info:
-        if item[2] >= 0:
-            edges.append({'from': idlist[item[0]], 'to': idlist[item[1]], 'value': item[2]*edge_scaling})
 
-    return {'nodes': nodes, 'edges': edges}
+    n_size = similarity_matrix.shape[0]
+
+    # compute the indices of repo_id and previous_id
+    repo_id_ind = idlist.index(repo_id)
+
+    # push in this repo
+    nodes.append({'id': repo_id, 'value': weight_list[repo_id_ind]*node_scaling,
+                  'label': full_name_list[repo_id_ind].split('/')[1]})
+
+    branch_ind = find_largest_n(similarity_matrix, repo_id_ind, link_branch)
+
+    # push in one-step reachable nodes and edges
+    for ind, similarity in branch_ind:
+        nodes.append({'id': idlist[ind], 'value': weight_list[ind]*node_scaling,
+              'label': full_name_list[ind].split('/')[1]})
+        edges.append({'from': repo_id, 'to': idlist[ind], 'value': similarity*edge_scaling})
+
+    # push in two-step reachable nodes and edges
+    for i, sim in branch_ind:
+        branch_ind_2nd = find_largest_n(similarity_matrix, i, link_branch_2nd)
+        for j, similarity in branch_ind_2nd:
+            if not containNode(nodes, idlist[j]) and similarity > link_thres:
+                nodes.append({'id': idlist[j], 'value': weight_list[j]*node_scaling,
+                      'label': full_name_list[j].split('/')[1]})
+                edges.append({'from': idlist[i], 'to': idlist[j], 'value': similarity*edge_scaling})
+
+    #
+    #
+    #
+    # print(sorted_similarity_to_other_repo)
+    # print(branch_ind)
+    #
+    #
+    #
+    #
+    #
+    #
+    #
+    #
+    # sys.exit(0)
+    #
+    #
+    #
+    #
+    # n_id = len(idlist)
+    #
+    # nodes = []
+    # for i in xrange(0, n_id):
+    #     nodes.append({'id': idlist[i], 'value': weight_list[i]*node_scaling,
+    #                   'label': full_name_list[i].split('/')[1]})  #, 'title': full_name_list[i]})
+    #
+    # # edges = []
+    # # weight_pair = []
+    # # for i in range(0, n_id):
+    # #     weight_pair.append((i, weight_list[i]))
+    # # sorted(weight_pair, key=lambda x: x[0], reverse=True)
+    #
+    # # print(similarity_matrix.shape)
+    #
+    # edge_info = []
+    # for i in xrange(0, n_id-1):
+    #     for j in xrange(i+1, n_id):
+    #         if similarity_matrix[i, j] >= thres:
+    #             edge_info.append((i, j, similarity_matrix[i, j]))
+    # edge_info = sorted(edge_info, key=lambda x: x[2], reverse=True)
+    #
+    # if len(edge_info) > n_edge_limit:
+    #     edge_info = edge_info[:n_edge_limit]
+    #
+    # # count occurance
+    # edge_occurance = [0]*n_id
+    # for i, j, val in edge_info:
+    #     edge_occurance[i] += 1
+    #     edge_occurance[j] += 1
+    #
+    # for (i, val) in enumerate(edge_occurance):
+    #     if val == 0:
+    #         similarity_matrix[i, i] = 0
+    #         max_ind = 0
+    #         max_val = 0
+    #         for j in xrange(0, n_id):
+    #             if max_val < similarity_matrix[i, j]:
+    #                 max_val = similarity_matrix[i, j]
+    #                 max_ind = j
+    #         edge_info.append((i, max_ind, max_val))
+    #
+    # edges = []
+    # for item in edge_info:
+    #     if item[2] >= 0:
+    #         edges.append({'from': idlist[item[0]], 'to': idlist[item[1]], 'value': item[2]*edge_scaling})
+
+    return {'nodes': nodes, 'edges': edges, 'focus_id': repo_id}
 
 
 @app.route('/_query')
 def query():
     full_name = request.args.get('repo', 0, type=str)
+    history_graph = request.args.get('history_graph', 0)
+
     repo_info = get_repo_info(full_name)
     readme = get_readme(full_name)
     vec_readme = text2vector(readme)
@@ -373,12 +443,12 @@ def query():
         mat = sp.sparse.lil_matrix((n_idlist, len(tag_list)))
         cur = db.cursor()
         cur.execute('USE ' + database_name + ';')
-        for i in range(0, n_idlist):
+        for i in xrange(0, n_idlist):
             cur.execute('SELECT vec FROM readmefreqvec WHERE id='+str(idlist[i]))
             mat[i, :] = weigh_vec(pickle.loads(str(cur.fetchall()[0][0])))
 
         similarity_additional_vec = mat.dot(nvec.transpose()).todense()
-        for i in range(0, n_idlist):
+        for i in xrange(0, n_idlist):
             similarity_matrix[i, -1] = similarity_additional_vec[i]
             similarity_matrix[-1, i] = similarity_additional_vec[i]
         idlist.append(repo_info['id'])
@@ -387,15 +457,9 @@ def query():
         n_fork = int(repo_info['forks_count'])
         weight_list.append(math.log10(n_star + ratio_star_fork*n_fork))
 
-    print('Generate network')
-    print(datetime.datetime.now())
+    network_json = generate_network(repo_info['id'], history_graph, similarity_matrix, idlist, full_name_list,
+                                    weight_list, link_branch=link_branch, link_branch_2nd=link_branch_2nd, link_thres=link_thres)
 
-    network_json = generate_network(similarity_matrix, idlist, full_name_list, weight_list, thres=thres_link)
-    network_json['focus_id'] = repo_info['id']
-
-    print('Return _query')
-    print(datetime.datetime.now())
-    
     return flask.json.dumps(network_json)
 
 
@@ -435,7 +499,6 @@ def repo_info():
     for j in jind:
         tags.append({'text': tag_list[j][1], 'weight': nvec[0, j]*tag_scale})
 
-
     full_name = full_name.split('/')
     user = full_name[0]
     repo = full_name[1]
@@ -457,4 +520,6 @@ def index_jquery():
     return render_template('index_js.html') 
 
 
-if __name__ == "__main__":                                                                                                                                                           app.run(debug=True, host='0.0.0.0', port=80)                                                                                                                                 
+if __name__ == "__main__":
+    app.run(debug=True, host='0.0.0.0', port=80)
+    print('Ready!')

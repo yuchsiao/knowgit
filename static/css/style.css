@@ -217,7 +217,15 @@ div.repo-time-container {
     font-size: 26px;
     font-weight: 500;
     opacity: 0;
+    color: #D2F6CF;
 }
+
+/*div {*/
+    /*background: #3cba1a;*/
+    /*border: #a7e79c;*/
+    /*border: #97C2FC;*/
+
+/*}*/
 
 #repo-input-github {
     position: fixed;
