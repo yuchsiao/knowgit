@@ -48,6 +48,8 @@ app = Flask(__name__)
 
 db = pymysql.connect(user="root", host="localhost", charset='utf8')
 
+cluster_centers = 0
+cluster_matrices = 0
 
 # load tags
 def normalize_tag_list(tag_list):
@@ -136,7 +138,8 @@ def prepare_clusters():
 
 
 tag_dict, tag_list = prepare_tag()
-cluster_centers, cluster_matrices = prepare_clusters()
+# cluster_centers = {}
+# cluster_matrices = {}
 
 
 def time_github_to_unix(timestr):
@@ -521,5 +524,10 @@ def index_jquery():
 
 
 if __name__ == "__main__":
-    app.run(debug=True, host='0.0.0.0', port=80)
+    global cluster_centers
+    global cluster_matrices
+    cluster_centers, cluster_matrices = prepare_clusters()
     print('Ready!')
+
+    app.run(debug=True, host='0.0.0.0', port=80)
+
