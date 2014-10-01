@@ -495,7 +495,12 @@ def query():
         full_name_list.append(str(repo_info['full_name']))
         n_star = int(repo_info['stargazers_count'])
         n_fork = int(repo_info['forks_count'])
-        weight_list.append(math.log10(n_star + ratio_star_fork*n_fork))
+
+        score = 0
+        if n_star > 0 or n_fork > 0:
+            score = math.log10(n_star + ratio_star_fork*n_fork)
+
+        weight_list.append(score)
 
     network_json = generate_network(repo_info['id'], history_graph, similarity_matrix, idlist, full_name_list,
                                     weight_list, link_branch=link_branch, link_branch_2nd=link_branch_2nd, link_thres=link_thres)
@@ -549,7 +554,7 @@ def repo_info():
     data = {'user': user, 'repo': repo, 'description': description, 'language': language,
             'created': created, 'pushed': pushed,
             'star': int(star), 'fork': int(fork), 'homepage': homepage, 'tags': tags[:n_tag_on_display],
-            'id': repo_id, 'readme': markdown.markdown(readme[:readme_len])}
+            'id': repo_id, 'readme': markdown.markdown(readme[:readme_len].decode('utf-8', 'ignore'))}
 
     return flask.json.dumps(data)
 

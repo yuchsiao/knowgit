@@ -310,6 +310,10 @@ $(function(){
             if (!val[0]) {
                 return;
             }
+            if (!val[1]) {
+                errorMsg('Please enter user/repo');
+                return;
+            }
             val[1] = val[1].trim();
             if (!val[0] || !val[1]) {
                 errorMsg('Please enter user/repo');
