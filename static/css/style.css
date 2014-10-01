@@ -206,6 +206,7 @@ div.repo-time-container {
     left: 50%;
     margin-left: -130px;
     top: 317px;
+    max-width: 258px;
 }
 
 #repo-input-knowgit {
@@ -220,13 +221,6 @@ div.repo-time-container {
     color: #D2F6CF;
 }
 
-/*div {*/
-    /*background: #3cba1a;*/
-    /*border: #a7e79c;*/
-    /*border: #97C2FC;*/
-
-/*}*/
-
 #repo-input-github {
     position: fixed;
     top: 87px;
@@ -238,6 +232,20 @@ div.repo-time-container {
     opacity: 0;
 }
 
+#repo-input-status {
+    margin: 4px;
+    font-size: 1.3em;
+    color: #aaaaaa;
+    opacity: 0.95;
+    background: #ffffff;
+    box-shadow: 0 0 6px #ffffff;
+}
+
+#repo-input-status.error {
+    color: #c93d41;
+}
+
+/*contact page*/
 #contact-container {
     font-size: 1.2em;
     margin-top: 80px;

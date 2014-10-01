@@ -13,6 +13,22 @@ $(function(){
 
     var flag_graph_toggle = false;
 
+    function errorMsg(msg) {
+        d3.select('#repo-input-status')
+            .classed({'error': true})
+            .html(msg)
+            .transition()
+            .delay(500)
+            .style('opacity', 0.95);
+    }
+
+    function clearMsg() {
+        d3.select('#repo-input-status')
+            .transition()
+            .duration(600)
+            .style('opacity', 0);
+    }
+
     function sendInfo() {
         $.getJSON($SCRIPT_ROOT + '/_query', {
             repo: $('#repo-input').val()
@@ -21,6 +37,11 @@ $(function(){
     }
 
     function drawNetwork(d) {
+
+        if ('error_msg' in d) {
+            errorMsg(d['error_msg']);
+            return;
+        }
 
         currentGraph = d;
 
@@ -95,9 +116,6 @@ $(function(){
             edges: edges
         };
 
-        console.log(data);
-
-
         var options = {
             stabilize: false,
             nodes: {
@@ -141,7 +159,6 @@ $(function(){
             $('#repo-input').val(fullName);
             doubleClickOnNode(focus_id, properties.nodes[0])
             sendInfo()
-            console.log(historyGraph);
         });
 
         network.focusOnNode(focus_id);
@@ -214,6 +231,7 @@ $(function(){
             }
         }
 
+        // Only preserve the last step
         if (flagOneStep) {
             historyGraph.edges = [historyGraph.edges[historyGraph.edges.length-1]];
             historyGraph.nodes = historyGraph.nodes.slice(historyGraph.nodes.length-2, historyGraph.nodes.length);
@@ -222,7 +240,6 @@ $(function(){
             historyGraph.edges = historyGraph.edges.slice(historyGraph.edges.length-2, historyGraph.edges.length);
             historyGraph.nodes = historyGraph.nodes.slice(historyGraph.nodes.length-3, historyGraph.nodes.length);
         }
-        console.log(historyGraph)
 //        historyGraph.edges = historyGraph.edges.slice(Math.max(0, historyGraph.edges.length-2), historyGraph.edges.length);
 //        historyGraph.nodes = historyGraph.nodes.slice(Math.max(0, historyGraph.nodes.length-3), historyGraph.nodes.length);
 
@@ -287,7 +304,20 @@ $(function(){
                 edges: []
             };
 
+            // Verify input
+            val = $('#repo-input').val().split('/');
+            val[0] = val[0].trim();
+            if (!val[0]) {
+                return;
+            }
+            val[1] = val[1].trim();
+            if (!val[0] || !val[1]) {
+                errorMsg('Please enter user/repo');
+                return;
+            }
+            $('#repo-input').val(val[0].trim()+'/'+val[1].trim());
 
+            clearMsg();
             sendInfo();
 
             d3.select('#title').transition().duration(1000)

@@ -48,8 +48,8 @@ app = Flask(__name__)
 
 db = pymysql.connect(user="root", host="localhost", charset='utf8')
 
-cluster_centers = 0
-cluster_matrices = 0
+# cluster_centers = 0
+# cluster_matrices = 0
 
 # load tags
 def normalize_tag_list(tag_list):
@@ -423,12 +423,44 @@ def query():
     full_name = request.args.get('repo', 0, type=str)
     history_graph = request.args.get('history_graph', 0)
 
-    repo_info = get_repo_info(full_name)
-    readme = get_readme(full_name)
-    vec_readme = text2vector(readme)
-    vec_description = text2vector(repo_info['description'])
-    nvec = normalize_vec(vec_readme+vec_description)
+    error_msg = ''
+
+    try:
+        repo_info = get_repo_info(full_name)
+    except urllib2.HTTPError:
+        error_msg += 'user/repo not found'
+        return flask.json.dumps({'error_msg': error_msg})
+
     language = str(repo_info['language']).lower()
+    if language == 'none':
+        language = ''
+
+    try:
+        readme = get_readme(full_name)
+        vec_readme = text2vector(readme)
+    except urllib2.HTTPError:
+        # no readme file. Ignore vec_readme
+        vec_readme = 0
+
+    if str(repo_info['description']).strip() == '':
+        vec_description = 0
+    else:
+        try:
+            vec_description = text2vector(repo_info['description'])
+        except urllib2.HTTPError:
+            # no description. Ignore vec_description
+            vec_description = 0
+
+    nvec = vec_readme + vec_description
+
+    if isinstance(nvec, type(0)):
+        # no readme no description. Return error_msg
+        error_msg += 'Neither description nor readme exist.<br>' \
+                     'Try another repo.'
+        return flask.json.dumps({'error_msg': error_msg})
+
+
+    nvec = normalize_vec(vec_readme+vec_description)
 
     # cluster_centers, cluster_matrix = prepare_cluster(language)
     matrix = cluster_matrices[language]
@@ -490,7 +522,6 @@ def repo_info():
     else:  # need to get info from github api
         datajson = get_repo_info_by_id(repo_id)
         datajson['readme'] = get_readme(datajson['full_name'])
-        print(datajson)
         full_name = datajson['full_name']
         description = datajson['description']
         language = datajson['language']
