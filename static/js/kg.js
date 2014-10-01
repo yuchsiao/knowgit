@@ -287,6 +287,7 @@ $(function(){
                 edges: []
             };
 
+
             sendInfo();
 
             d3.select('#title').transition().duration(1000)

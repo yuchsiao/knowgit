@@ -152,6 +152,11 @@ def index():
     return render_template('index.html')
 
 
+@app.route('/about')
+def about():
+    return render_template('about.html')
+
+
 def get_repo_info_by_id(repo_id):
     url = "https://api.github.com/repositories/"
     full_url = url + str(repo_id)
@@ -518,9 +523,9 @@ def repo_info():
     return flask.json.dumps(data)
 
 
-@app.route("/jquery")
-def index_jquery():
-    return render_template('index_js.html') 
+@app.route("/slides")
+def slides():
+    return render_template('slides.html')
 
 
 if __name__ == "__main__":

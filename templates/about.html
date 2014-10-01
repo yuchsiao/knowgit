@@ -17,15 +17,15 @@
     <!--<script src="../static/js/sigma.min.js"></script>-->
     <script src="../static/vis-dist/vis.min.js"></script>
     <script src="../static/d3.min.js"></script>
-    <script src="../static/js/typeahead.js"></script>
     <!--<script src="../static/jqcloud/jqcloud-1.0.4.min.js"></script>-->
 
     <script type=text/javascript>
-      $SCRIPT_ROOT = {{ request.script_root|tojson|safe }};
+        $SCRIPT_ROOT = {{ request.script_root|tojson|safe }};
     </script>
     <script src="../static/js/kg.js"></script>
 
     <!-- CSS -->
+    <link href="//maxcdn.bootstrapcdn.com/font-awesome/4.2.0/css/font-awesome.min.css" rel="stylesheet">
     <link href="../static/bootstrap-3.2.0-dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="../static/css/starter-template.css" rel="stylesheet">
     <link href="../static/vis-dist/vis.min.css" rel="stylesheet">
@@ -60,26 +60,28 @@
 <!--<br>-->
 <br>
 
-<div id="title-container">
-
-    <div id="title" class="starter-template">
-        <h1><span style="color:#1471ba">Know</span><span style="color:#c12c2c">Git</span></h1>
-        <h2><span style="color:#1471ba">Know</span>ledge <span style="color:#c12c2c">G</span>roup @ <span class="mega-octicon octicon-logo-github"></span> <span class="mega-octicon octicon-mark-github"></span> </h2>
-        <p class="lead"><span>I</span>dentify similar repos.
-            <span>F</span>ind alternative tools. <br>
-            <span>L</span>earn the big picture of state-of-the-art technologies.</p>
-    </div>
-</div><!-- /.container -->
-<span id="repo-input-knowgit"><span style="color:#1471ba">Know</span><span style="color:#c12c2c">Git</span></span>
-<div class="starter-template" id="repo-input-container">
-    <input id="repo-input" type="text" name="repo" placeholder="e.g. mbostock/d3">
-
-</div>
-<span id="repo-input-github">@ <span class="octicon octicon-logo-github"></span> <span class="octicon octicon-mark-github"></span></span>
-
-
-<div id="main-container">
-    <div id="network-container"></div>
+<div id="contact-container">
+    <p>
+        Interesting? Find out more!
+    </p>
+    <table>
+        <tr>
+            <td class="left"><i class="fa fa-github-square fa-lg"></i></td>
+            <td class="right" ><a href="https://github.com/yuchsiao">GitHub</a></td>
+        </tr>
+        <tr>
+            <td class="left"><i class="fa fa-linkedin-square fa-lg"></i></td>
+            <td class="right" ><a href="https://www.linkedin.com/in/yuchsiao">LinkedIn</a></td>
+        </tr>
+        <tr>
+            <td class="left"><i class="fa fa-globe fa-lg"></i></td>
+            <td class="right"><a href="http://www.mit.edu/~yuchsiao/">Website</a></td>
+        </tr>
+        <tr>
+            <td class="left"><i class="fa fa-envelope fa-lg"></i></td>
+            <td class="right" id="email">yuchsiao<br></td>
+        </tr>
+    </table>
 </div>
 
 

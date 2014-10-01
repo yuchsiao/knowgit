@@ -237,3 +237,36 @@ div.repo-time-container {
     font-weight: 500;
     opacity: 0;
 }
+
+#contact-container {
+    font-size: 1.2em;
+    margin-top: 80px;
+    text-align: center;
+}
+
+#contact-container p {
+    font-size: 1.2em;
+    font-weight: 600;
+}
+
+#contact-container table{
+    margin-left:auto;
+    margin-right:auto;
+    margin-top: 20px;
+}
+
+#contact-container td {
+    padding: 5px;
+}
+
+#contact-container td.left {
+    text-align: right;
+}
+
+#contact-container td.right {
+    text-align: left;
+}
+
+#email::after {
+    content: "@mit.edu"
+}
