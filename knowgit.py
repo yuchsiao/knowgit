@@ -46,10 +46,12 @@ flag_normalize_tag = True
 
 app = Flask(__name__)
 
+# global variables
 db = pymysql.connect(user="root", host="localhost", charset='utf8')
+cluster_centers = 0
+cluster_matrices = 0
+flag_ready = False
 
-# cluster_centers = 0
-# cluster_matrices = 0
 
 # load tags
 def normalize_tag_list(tag_list):
@@ -420,6 +422,9 @@ def generate_network(repo_id, history_graph, similarity_matrix, idlist, full_nam
 
 @app.route('/_query')
 def query():
+    if not flag_ready:
+        init()
+
     full_name = request.args.get('repo', 0, type=str)
     history_graph = request.args.get('history_graph', 0)
 
@@ -564,11 +569,16 @@ def slides():
     return render_template('slides.html')
 
 
-if __name__ == "__main__":
+def init():
+    global flag_ready
     global cluster_centers
     global cluster_matrices
     cluster_centers, cluster_matrices = prepare_clusters()
-    print('Ready!')
+    flag_ready = True
+
+
+if __name__ == "__main__":
 
     app.run(debug=True, host='0.0.0.0', port=80)
+
 
