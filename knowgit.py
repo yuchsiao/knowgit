@@ -47,7 +47,6 @@ flag_normalize_tag = True
 app = Flask(__name__)
 
 # global variables
-db = pymysql.connect(user="root", host="localhost", charset='utf8')
 cluster_centers = 0
 cluster_matrices = 0
 flag_ready = False
@@ -71,7 +70,8 @@ def normalize_tag_dict(tag_dict):
 
 
 def prepare_tag():
-    with db, codecs.open(filename_tag, 'rU', 'utf-8') as tag_in, \
+
+    with codecs.open(filename_tag, 'rU', 'utf-8') as tag_in, \
             codecs.open(filename_stopword, 'rU', 'utf-8') as stop_in:
 
         tag_dict = {}
@@ -88,37 +88,41 @@ def prepare_tag():
         if flag_normalize_tag:
             tag_dict = normalize_tag_dict(tag_dict)
             tag_list = normalize_tag_list(tag_list)
-        return tag_dict, tag_list
+
+    return tag_dict, tag_list
 
 
 def prepare_cluster(language):
     # print language
     centers = []
+    db = pymysql.connect(user="root", host="localhost", charset='utf8')
+    with db:
+        # load cluster centers
+        cur_center = db.cursor()
+        cur_center.execute('USE ' + database_name + ';')
 
-    # load cluster centers
-    cur_center = db.cursor()
-    cur_center.execute('USE ' + database_name + ';')
+        # allocate memory
+        # cur_center.execute('SELECT count(*) FROM center;')
+        cur_center.execute('SELECT count(*) FROM center WHERE language="' + language + '";')
+        n_center = cur_center.fetchall()[0][0]
+        n_tag = len(tag_list)
+        matrix = sp.sparse.lil_matrix((n_center, n_tag))
 
-    # allocate memory
-    # cur_center.execute('SELECT count(*) FROM center;')
-    cur_center.execute('SELECT count(*) FROM center WHERE language="' + language + '";')
-    n_center = cur_center.fetchall()[0][0]
-    n_tag = len(tag_list)
-    matrix = sp.sparse.lil_matrix((n_center, n_tag))
+        # get center info
+        # cur_center.execute('SELECT * FROM center;')
+        cur_center.execute('SELECT * FROM center WHERE language="' + language + '";')
+        i = 0
 
-    # get center info
-    # cur_center.execute('SELECT * FROM center;')
-    cur_center.execute('SELECT * FROM center WHERE language="' + language + '";')
-    i = 0
+        # for cluster_label, ind, repo_id, vec_pickled in cur_center:
+        for language, cluster_label, ind, repo_id, vec_pickled in cur_center:
+            # tmp = pickle.loads(str(vec_pickled))
+            matrix[i, :] = pickle.loads(str(vec_pickled))
+            center = {'ind': ind, 'id': repo_id}
+            centers.append(center)
+            i += 1
+        cur_center.close()
+    db.close()
 
-    # for cluster_label, ind, repo_id, vec_pickled in cur_center:
-    for language, cluster_label, ind, repo_id, vec_pickled in cur_center:
-        tmp = pickle.loads(str(vec_pickled))
-        matrix[i, :] = pickle.loads(str(vec_pickled))
-        center = {'ind': ind, 'id': repo_id}
-        centers.append(center)
-        i += 1
-    
     return centers, matrix
 
 
@@ -126,22 +130,23 @@ def prepare_clusters():
     centers = {}
     matrices = {}
 
-    cur = db.cursor()
-    cur.execute('USE ' + database_name + ';')
-    cur.execute('select language from center group by language;')
+    db = pymysql.connect(user="root", host="localhost", charset='utf8')
+    with db:
+        cur = db.cursor()
+        cur.execute('USE ' + database_name + ';')
+        cur.execute('select language from center group by language;')
 
-    for row, in cur:
-        language = str(row)
-        center, matrix = prepare_cluster(language)
-        centers[language] = center
-        matrices[language] = matrix
-
+        for row, in cur:
+            language = str(row)
+            center, matrix = prepare_cluster(language)
+            centers[language] = center
+            matrices[language] = matrix
+        cur.close()
+    db.close()
     return centers, matrices
 
 
 tag_dict, tag_list = prepare_tag()
-# cluster_centers = {}
-# cluster_matrices = {}
 
 
 def time_github_to_unix(timestr):
@@ -273,12 +278,16 @@ def label_vec(vec, cluster_matrix):
 
 
 def load_similarity_matrix(label, language):
-    cur_cluster = db.cursor()
-    cur_cluster.execute('USE ' + database_name + ';')
-    # cur_cluster.execute('SELECT indlist, idlist, matrix FROM cluster WHERE cluster_label='+str(label) + ';')
-    cur_cluster.execute('SELECT indlist, idlist, matrix FROM cluster WHERE cluster_label='+str(label)+' and language="' + language + '";')
+    db = pymysql.connect(user="root", host="localhost", charset='utf8')
+    with db:
+        cur_cluster = db.cursor()
+        cur_cluster.execute('USE ' + database_name + ';')
+        # cur_cluster.execute('SELECT indlist, idlist, matrix FROM cluster WHERE cluster_label='+str(label) + ';')
+        cur_cluster.execute('SELECT indlist, idlist, matrix FROM cluster WHERE cluster_label='+str(label)+' and language="' + language + '";')
 
-    indlist_text, idlist_text, matrix_pickled = cur_cluster.fetchall()[0]
+        indlist_text, idlist_text, matrix_pickled = cur_cluster.fetchall()[0]
+        cur_cluster.close()
+    db.close()
     matrix = pickle.loads(str(matrix_pickled))
     indlist = json.loads(indlist_text)
     idlist = json.loads(idlist_text)
@@ -289,16 +298,20 @@ def load_similarity_matrix(label, language):
 def get_full_name_weight_list(idlist):
     full_name_list = []
     weight_list = []
-    cur = db.cursor()
-    cur.execute('USE ' + database_name + ';')
+    db = pymysql.connect(user="root", host="localhost", charset='utf8')
+    with db:
+        cur = db.cursor()
+        cur.execute('USE ' + database_name + ';')
 
-    for repo_id in idlist:
-        cur.execute('SELECT full_name, star, fork FROM readmelist WHERE id='+str(repo_id))
-        row = cur.fetchall()[0]
-        full_name_list.append(str(row[0]))
-        n_star = int(row[1])
-        n_fork = int(row[2])
-        weight_list.append(math.log10(n_star + ratio_star_fork * n_fork))
+        for repo_id in idlist:
+            cur.execute('SELECT full_name, star, fork FROM readmelist WHERE id='+str(repo_id))
+            row = cur.fetchall()[0]
+            full_name_list.append(str(row[0]))
+            n_star = int(row[1])
+            n_fork = int(row[2])
+            weight_list.append(math.log10(n_star + ratio_star_fork * n_fork))
+        cur.close()
+    db.close()
 
     return full_name_list, weight_list
 
@@ -486,11 +499,15 @@ def query():
 
         # Prepare matrix
         mat = sp.sparse.lil_matrix((n_idlist, len(tag_list)))
-        cur = db.cursor()
-        cur.execute('USE ' + database_name + ';')
-        for i in xrange(0, n_idlist):
-            cur.execute('SELECT vec FROM readmefreqvec WHERE id='+str(idlist[i]))
-            mat[i, :] = weigh_vec(pickle.loads(str(cur.fetchall()[0][0])))
+        db = pymysql.connect(user="root", host="localhost", charset='utf8')
+        with db:
+            cur = db.cursor()
+            cur.execute('USE ' + database_name + ';')
+            for i in xrange(0, n_idlist):
+                cur.execute('SELECT vec FROM readmefreqvec WHERE id='+str(idlist[i]))
+                mat[i, :] = weigh_vec(pickle.loads(str(cur.fetchall()[0][0])))
+            cur.close()
+        db.close()
 
         similarity_additional_vec = mat.dot(nvec.transpose()).todense()
         for i in xrange(0, n_idlist):
@@ -517,31 +534,35 @@ def query():
 def repo_info():
     repo_id = request.args.get('repo_id', 0, type=int)
 
-    cur = db.cursor()
-    cur.execute('USE ' + database_name + ';')
-    cur.execute('SELECT full_name, description, language, created_at, pushed_at, '
-                'star, fork, homepage, readme FROM readmelist WHERE id='+str(repo_id)+';')
+    db = pymysql.connect(user="root", host="localhost", charset='utf8')
+    with db:
+        cur = db.cursor()
+        cur.execute('USE ' + database_name + ';')
+        cur.execute('SELECT full_name, description, language, created_at, pushed_at, '
+                    'star, fork, homepage, readme FROM readmelist WHERE id='+str(repo_id)+';')
 
-    item = cur.fetchall()
+        item = cur.fetchall()
 
-    if len(item) != 0:
-        full_name, description, language, created, pushed, star, fork, homepage, readme = item[0]
-        cur.execute('SELECT vec FROM readmefreqvec WHERE id='+str(repo_id)+';')
-        vec_pickled = cur.fetchall()[0][0]
-        nvec = weigh_vec(pickle.loads(str(vec_pickled)))
-    else:  # need to get info from github api
-        datajson = get_repo_info_by_id(repo_id)
-        datajson['readme'] = get_readme(datajson['full_name'])
-        full_name = datajson['full_name']
-        description = datajson['description']
-        language = datajson['language']
-        created = time_github_to_unix(datajson['created_at'])
-        pushed = time_github_to_unix(datajson['pushed_at'])
-        star = datajson['stargazers_count']
-        fork = datajson['forks_count']
-        homepage = datajson['homepage']
-        readme = datajson['readme']
-        nvec = text2vector(readme)
+        if len(item) != 0:
+            full_name, description, language, created, pushed, star, fork, homepage, readme = item[0]
+            cur.execute('SELECT vec FROM readmefreqvec WHERE id='+str(repo_id)+';')
+            vec_pickled = cur.fetchall()[0][0]
+            nvec = weigh_vec(pickle.loads(str(vec_pickled)))
+        else:  # need to get info from github api
+            datajson = get_repo_info_by_id(repo_id)
+            datajson['readme'] = get_readme(datajson['full_name'])
+            full_name = datajson['full_name']
+            description = datajson['description']
+            language = datajson['language']
+            created = time_github_to_unix(datajson['created_at'])
+            pushed = time_github_to_unix(datajson['pushed_at'])
+            star = datajson['stargazers_count']
+            fork = datajson['forks_count']
+            homepage = datajson['homepage']
+            readme = datajson['readme']
+            nvec = text2vector(readme)
+        cur.close()
+    db.close()
 
     iind, jind = nvec.nonzero()
     tags = []
